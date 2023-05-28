@@ -19,7 +19,7 @@ dependencies = [
   "imap_tools",
   "rich"
 ]
-dynamic = ["version"]
+version = "0.1"
 
 [tool.black]
 line-length = 79
