@@ -24,12 +24,16 @@ def parse_args():
     parser.add_argument(
         "-t", "--no-title", help="Do not show title", action="store_true"
     )
+    parser.add_argument("-f", "--folder", help="IMAP folder", default="INBOX")
     parser.add_argument("-w", "--wrap", help="Wrap text", action="store_true")
+    parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
+    parser.add_argument("MAILID", help="Mail ID to fetch", nargs="?")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+
     table = Table(
         expand=True,
         show_header=not args.no_title,
@@ -46,8 +50,13 @@ def main():
 
     try:
         with imap_tools.MailBoxTls(args.server, port=args.port).login(
-            args.username, args.password
+            args.username, args.password, args.folder
         ) as mailbox:
+            if args.MAILID:
+                msg = [x for x in mailbox.fetch(f"UID {args.MAILID}")][0]
+                print(msg.text if not args.html else msg.html)
+                return 0
+
             for msg in mailbox.fetch():
                 table.add_row(
                     msg.uid,
