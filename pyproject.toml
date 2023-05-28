@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myl"
+authors = [
+  {name = "Philipp Schmitt", email = "philipp@schmitt.co"},
+]
+description = "Dead simple IMAP CLI client"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["imap", "email"]
+license = {text = "GPL-3.0"}
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "imap_tools",
+  "rich"
+]
+dynamic = ["version"]
+
+[tool.black]
+line-length = 79
+
+[project.scripts]
+myl = "myl:main"
