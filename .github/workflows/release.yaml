@@ -26,6 +26,8 @@ jobs:
 
     - name: python build
       run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade build
         python -m build
 
     - name: Publish package distributions to PyPI
