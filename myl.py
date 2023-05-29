@@ -66,12 +66,11 @@ def main():
             args.username, args.password, args.folder
         ) as mailbox:
             if args.MAILID:
-                msg = [
-                    x
-                    for x in mailbox.fetch(
+                msg = next(
+                    mailbox.fetch(
                         f"UID {args.MAILID}", mark_seen=args.mark_seen
                     )
-                ][0]
+                )
                 print(msg.text if not args.html else msg.html)
                 return 0
 
