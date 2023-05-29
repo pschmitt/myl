@@ -17,6 +17,12 @@ def parse_args():
     parser.add_argument("-P", "--port", help="IMAP server port", default=143)
     parser.add_argument("--starttls", help="Start TLS", action="store_true")
     parser.add_argument(
+        "-c", "--count", help="Number of messages to fetch", default=10, type=int
+    )
+    parser.add_argument(
+        "-m", "--mark-seen", help="Mark seen", action="store_true"
+    )
+    parser.add_argument(
         "-u", "--username", help="IMAP username", required=True
     )
     parser.add_argument(
@@ -56,17 +62,29 @@ def main():
             args.username, args.password, args.folder
         ) as mailbox:
             if args.MAILID:
-                msg = [x for x in mailbox.fetch(f"UID {args.MAILID}")][0]
+                msg = [
+                    x
+                    for x in mailbox.fetch(
+                        f"UID {args.MAILID}", mark_seen=args.mark_seen
+                    )
+                ][0]
                 print(msg.text if not args.html else msg.html)
                 return 0
 
-            for msg in mailbox.fetch():
+            for msg in mailbox.fetch(
+                reverse=True,
+                bulk=True,
+                limit=args.count,
+                mark_seen=args.mark_seen,
+            ):
                 table.add_row(
-                    msg.uid,
-                    msg.subject,
+                    msg.uid if msg.uid else "???",
+                    msg.subject if msg.subject else "<no-subject>",
                     msg.from_,
-                    msg.date.strftime("%d/%m/%Y %H:%M"),
+                    msg.date.strftime("%H:%M %d/%m/%Y") if msg.date else "???",
                 )
+                if len(table.rows) >= args.count:
+                    break
 
         console = Console()
         console.print(table)
