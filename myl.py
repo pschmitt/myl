@@ -36,6 +36,7 @@ def parse_args():
         "-t", "--no-title", help="Do not show title", action="store_true"
     )
     parser.add_argument("-f", "--folder", help="IMAP folder", default="INBOX")
+    parser.add_argument("-S", "--search", help="Search string", default="ALL")
     parser.add_argument("-w", "--wrap", help="Wrap text", action="store_true")
     parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
     parser.add_argument("MAILID", help="Mail ID to fetch", nargs="?")
@@ -75,6 +76,7 @@ def main():
                 return 0
 
             for msg in mailbox.fetch(
+                criteria=args.search,
                 reverse=True,
                 bulk=True,
                 limit=args.count,
