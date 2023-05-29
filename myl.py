@@ -15,6 +15,7 @@ def parse_args():
         "-s", "--server", help="IMAP server address", required=True
     )
     parser.add_argument("-P", "--port", help="IMAP server port", default=143)
+    parser.add_argument("--starttls", help="Start TLS", action="store_true")
     parser.add_argument(
         "-u", "--username", help="IMAP username", required=True
     )
@@ -49,7 +50,9 @@ def main():
     table.add_column("Date", style="cyan", no_wrap=not args.wrap)
 
     try:
-        with imap_tools.MailBoxTls(args.server, port=args.port).login(
+        mb = imap_tools.MailBoxTls if args.starttls else imap_tools.MailBox
+
+        with mb(args.server, port=args.port).login(
             args.username, args.password, args.folder
         ) as mailbox:
             if args.MAILID:
