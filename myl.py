@@ -17,7 +17,11 @@ def parse_args():
     parser.add_argument("-P", "--port", help="IMAP server port", default=143)
     parser.add_argument("--starttls", help="Start TLS", action="store_true")
     parser.add_argument(
-        "-c", "--count", help="Number of messages to fetch", default=10, type=int
+        "-c",
+        "--count",
+        help="Number of messages to fetch",
+        default=10,
+        type=int,
     )
     parser.add_argument(
         "-m", "--mark-seen", help="Mark seen", action="store_true"
@@ -76,6 +80,7 @@ def main():
                 bulk=True,
                 limit=args.count,
                 mark_seen=args.mark_seen,
+                headers_only=True,
             ):
                 table.add_row(
                     msg.uid if msg.uid else "???",
