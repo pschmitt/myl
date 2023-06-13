@@ -16,11 +16,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "dnspython",
   "imap_tools",
-  "requests",
+  "myl-discovery",
   "rich",
-  "xmltodict"
 ]
 version = "0.8.1"
 
