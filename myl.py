@@ -41,8 +41,10 @@ def parse_args():
         action="store_true",
         default=False,
     )
-    parser.add_argument("-P", "--port", help="IMAP server port", default=143)
-    parser.add_argument("--starttls", help="Start TLS", action="store_true")
+    parser.add_argument("-P", "--port", help="IMAP server port", default=993)
+    parser.add_argument(
+        "--starttls", help="Start TLS", action="store_true", default=False
+    )
     parser.add_argument(
         "-c",
         "--count",
