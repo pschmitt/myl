@@ -3,16 +3,31 @@ import logging
 import sys
 
 import imap_tools
+from rich import print
 from rich.console import Console
 from rich.table import Table
 
 LOGGER = logging.getLogger(__name__)
+GMAIL_IMAP_SERVER = "imap.gmail.com"
+GMAIL_IMAP_PORT = 993
+GMAIL_SENT_FOLDER = "[Gmail]/Sent Mail"
+# GMAIL_ALL_FOLDER = "[Gmail]/All Mail"
+
+
+def error_msg(msg):
+    print(f"[red]{msg}[/red]", file=sys.stderr)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-s", "--server", help="IMAP server address", required=True
+        "-s", "--server", help="IMAP server address", required=False
+    )
+    parser.add_argument(
+        "--google",
+        "--gmail",
+        help="Use Google IMAP settings (overrides --port, --server etc.)",
+        action="store_true",
     )
     parser.add_argument("-P", "--port", help="IMAP server port", default=143)
     parser.add_argument("--starttls", help="Start TLS", action="store_true")
@@ -36,6 +51,11 @@ def parse_args():
         "-t", "--no-title", help="Do not show title", action="store_true"
     )
     parser.add_argument("-f", "--folder", help="IMAP folder", default="INBOX")
+    parser.add_argument(
+        "--sent",
+        help="Sent email",
+        action="store_true",
+    )
     parser.add_argument("-S", "--search", help="Search string", default="ALL")
     parser.add_argument("-w", "--wrap", help="Wrap text", action="store_true")
     parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
@@ -50,7 +70,28 @@ def parse_args():
     parser.add_argument(
         "ATTACHMENT", help="Name of the attachment to fetch", nargs="?"
     )
-    return parser.parse_args()
+
+    args = parser.parse_args()
+
+    if args.google:
+        args.server = GMAIL_IMAP_SERVER
+        args.port = GMAIL_IMAP_PORT
+        args.starttls = False
+
+        if args.sent or args.folder == "Sent":
+            args.folder = GMAIL_SENT_FOLDER
+        # elif args.folder == "INBOX":
+        #     args.folder = GMAIL_ALL_FOLDER
+    else:
+        if args.sent:
+            args.folder = "Sent"
+
+    if not args.server:
+        error_msg("No server specified")
+        parser.print_help()
+        sys.exit(2)
+
+    return args
 
 
 def main():
