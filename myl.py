@@ -112,7 +112,7 @@ def main():
     else:
         if args.auto:
             try:
-                settings = autodiscover(args.username)
+                settings = autodiscover(args.username).get("imap")
             except Exception:
                 error_msg("Failed to autodiscover IMAP settings")
                 if args.debug:
