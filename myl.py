@@ -9,11 +9,13 @@ import requests
 import xmltodict
 from rich import print
 from rich.console import Console
+from rich.logging import RichHandler
 from rich.table import Table
 
 LOGGER = logging.getLogger(__name__)
+IMAP_PORT = 993
 GMAIL_IMAP_SERVER = "imap.gmail.com"
-GMAIL_IMAP_PORT = 993
+GMAIL_IMAP_PORT = IMAP_PORT
 GMAIL_SENT_FOLDER = "[Gmail]/Sent Mail"
 # GMAIL_ALL_FOLDER = "[Gmail]/All Mail"
 
@@ -24,6 +26,7 @@ def error_msg(msg):
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", help="Debug", action="store_true")
     parser.add_argument(
         "-s", "--server", help="IMAP server address", required=False
     )
@@ -41,7 +44,9 @@ def parse_args():
         action="store_true",
         default=False,
     )
-    parser.add_argument("-P", "--port", help="IMAP server port", default=993)
+    parser.add_argument(
+        "-P", "--port", help="IMAP server port", default=IMAP_PORT
+    )
     parser.add_argument(
         "--starttls", help="Start TLS", action="store_true", default=False
     )
@@ -85,32 +90,7 @@ def parse_args():
         "ATTACHMENT", help="Name of the attachment to fetch", nargs="?"
     )
 
-    args = parser.parse_args()
-
-    if args.google:
-        args.server = GMAIL_IMAP_SERVER
-        args.port = GMAIL_IMAP_PORT
-        args.starttls = False
-
-        if args.sent or args.folder == "Sent":
-            args.folder = GMAIL_SENT_FOLDER
-        # elif args.folder == "INBOX":
-        #     args.folder = GMAIL_ALL_FOLDER
-    else:
-        if args.auto:
-            settings = autodiscover(args.username)
-            args.server = settings.get("server")
-            args.port = settings.get("port")
-            args.starttls = settings.get("starttls")
-        if args.sent:
-            args.folder = "Sent"
-
-    if not args.server:
-        error_msg("No server specified")
-        parser.print_help()
-        sys.exit(2)
-
-    return args
+    return parser.parse_args()
 
 
 def resolve_txt(domain, criteria="^mailconf="):
@@ -177,29 +157,66 @@ def autodiscover(email_addr):
 
 def main():
     console = Console()
+    args = parse_args()
+    logging.basicConfig(
+        format="%(message)s",
+        handlers=[RichHandler(console=console)],
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
+    LOGGER.debug(args)
+
+    if args.google:
+        args.server = GMAIL_IMAP_SERVER
+        args.port = GMAIL_IMAP_PORT
+        args.starttls = False
+
+        if args.sent or args.folder == "Sent":
+            args.folder = GMAIL_SENT_FOLDER
+        # elif args.folder == "INBOX":
+        #     args.folder = GMAIL_ALL_FOLDER
+    else:
+        if args.auto:
+            try:
+                settings = autodiscover(args.username)
+            except Exception:
+                error_msg("Failed to autodiscover IMAP settings")
+                if args.debug:
+                    console.print_exception(show_locals=True)
+                return 1
+            LOGGER.debug(f"Discovered settings: {settings})")
+            args.server = settings.get("server")
+            args.port = settings.get("port", IMAP_PORT)
+            args.starttls = settings.get("starttls")
+        if args.sent:
+            args.folder = "Sent"
+
+    if not args.server:
+        error_msg(
+            "No server specified\n"
+            "You need to either:\n"
+            "- specify a server using --server HOSTNAME\n"
+            "- set --google if you are using a Gmail account\n"
+            "- use --auto to attempt autodiscovery"
+        )
+        return 2
+
+    table = Table(
+        expand=True,
+        show_header=not args.no_title,
+        header_style="bold",
+        show_lines=False,
+        box=None,
+    )
+    table.add_column("ID", style="red", no_wrap=not args.wrap, max_width=10)
+    table.add_column(
+        "Subject", style="green", no_wrap=not args.wrap, max_width=30
+    )
+    table.add_column("From", style="blue", no_wrap=not args.wrap, max_width=30)
+    table.add_column("Date", style="cyan", no_wrap=not args.wrap)
+
+    mb = imap_tools.MailBoxTls if args.starttls else imap_tools.MailBox
 
     try:
-        args = parse_args()
-
-        table = Table(
-            expand=True,
-            show_header=not args.no_title,
-            header_style="bold",
-            show_lines=False,
-            box=None,
-        )
-        table.add_column(
-            "ID", style="red", no_wrap=not args.wrap, max_width=10
-        )
-        table.add_column(
-            "Subject", style="green", no_wrap=not args.wrap, max_width=30
-        )
-        table.add_column(
-            "From", style="blue", no_wrap=not args.wrap, max_width=30
-        )
-        table.add_column("Date", style="cyan", no_wrap=not args.wrap)
-        mb = imap_tools.MailBoxTls if args.starttls else imap_tools.MailBox
-
         with mb(args.server, port=args.port).login(
             args.username, args.password, args.folder
         ) as mailbox:
