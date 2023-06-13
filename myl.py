@@ -1,8 +1,12 @@
 import argparse
 import logging
+import re
 import sys
 
+import dns.resolver
 import imap_tools
+import requests
+import xmltodict
 from rich import print
 from rich.console import Console
 from rich.table import Table
@@ -28,6 +32,14 @@ def parse_args():
         "--gmail",
         help="Use Google IMAP settings (overrides --port, --server etc.)",
         action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "-a",
+        "--auto",
+        help="Autodiscovery of the required server and port",
+        action="store_true",
+        default=False,
     )
     parser.add_argument("-P", "--port", help="IMAP server port", default=143)
     parser.add_argument("--starttls", help="Start TLS", action="store_true")
@@ -83,6 +95,11 @@ def parse_args():
         # elif args.folder == "INBOX":
         #     args.folder = GMAIL_ALL_FOLDER
     else:
+        if args.auto:
+            settings = autodiscover(args.username)
+            args.server = settings.get("server")
+            args.port = settings.get("port")
+            args.starttls = settings.get("starttls")
         if args.sent:
             args.folder = "Sent"
 
@@ -94,24 +111,91 @@ def parse_args():
     return args
 
 
-def main():
-    args = parse_args()
+def resolve_txt(domain, criteria="^mailconf="):
+    regex = re.compile(criteria)
+    answers = dns.resolver.resolve(domain, "TXT")
+    for rdata in answers:
+        for txt_string in rdata.strings:
+            txt_record = txt_string.decode("utf-8")
+            if re.search(regex, txt_record):
+                return txt_record
 
-    table = Table(
-        expand=True,
-        show_header=not args.no_title,
-        header_style="bold",
-        show_lines=False,
-        box=None,
+
+def resolve_srv(domain):
+    answers = dns.resolver.resolve(domain, "SRV")
+    data = []
+    for rdata in answers:
+        entry = {
+            "hostname": ".".join(
+                [
+                    x.decode("utf-8")
+                    for x in rdata.target.labels
+                    if x.decode("utf-8") != ""
+                ]
+            ),
+            "port": rdata.port,
+        }
+        data.append(entry)
+
+    return data
+
+
+# TODO export this a separate library
+def autodiscover(email_addr):
+    domain = email_addr.split("@")[-1]
+    if not domain:
+        raise ValueError(f"Invalid email address {email_addr}")
+
+    autoconfig = None  # resolve_txt(domain)
+
+    if not autoconfig:
+        srv = resolve_srv(f"_imaps._tcp.{domain}")
+        return {
+            "server": srv[0].get("hostname"),
+            "port": srv[0].get("port"),
+            "starttls": False,
+        }
+
+    res = requests.get(autoconfig)
+    res.raise_for_status()
+
+    data = xmltodict.parse(res.text)
+    imap = (
+        data.get("clientConfig", {})
+        .get("emailProvider", {})
+        .get("incomingServer")
     )
-    table.add_column("ID", style="red", no_wrap=not args.wrap, max_width=10)
-    table.add_column(
-        "Subject", style="green", no_wrap=not args.wrap, max_width=30
-    )
-    table.add_column("From", style="blue", no_wrap=not args.wrap, max_width=30)
-    table.add_column("Date", style="cyan", no_wrap=not args.wrap)
+    assert imap is not None
+    return {
+        "server": imap.get("hostname"),
+        "port": imap.get("port"),
+        "starttls": imap.get("socketType") == "STARTTLS",
+    }
+
+
+def main():
+    console = Console()
 
     try:
+        args = parse_args()
+
+        table = Table(
+            expand=True,
+            show_header=not args.no_title,
+            header_style="bold",
+            show_lines=False,
+            box=None,
+        )
+        table.add_column(
+            "ID", style="red", no_wrap=not args.wrap, max_width=10
+        )
+        table.add_column(
+            "Subject", style="green", no_wrap=not args.wrap, max_width=30
+        )
+        table.add_column(
+            "From", style="blue", no_wrap=not args.wrap, max_width=30
+        )
+        table.add_column("Date", style="cyan", no_wrap=not args.wrap)
         mb = imap_tools.MailBoxTls if args.starttls else imap_tools.MailBox
 
         with mb(args.server, port=args.port).login(
@@ -161,11 +245,10 @@ def main():
                 if len(table.rows) >= args.count:
                     break
 
-        console = Console()
         console.print(table)
         return 0
-    except Exception as e:
-        LOGGER.error(e)
+    except Exception:
+        console.print_exception(show_locals=True)
         return 1
 
 
