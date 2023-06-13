@@ -39,7 +39,17 @@ def parse_args():
     parser.add_argument("-S", "--search", help="Search string", default="ALL")
     parser.add_argument("-w", "--wrap", help="Wrap text", action="store_true")
     parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
+    parser.add_argument(
+        "-r",
+        "--raw",
+        help="Show the raw email",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument("MAILID", help="Mail ID to fetch", nargs="?")
+    parser.add_argument(
+        "ATTACHMENT", help="Name of the attachment to fetch", nargs="?"
+    )
     return parser.parse_args()
 
 
@@ -72,7 +82,23 @@ def main():
                         f"UID {args.MAILID}", mark_seen=args.mark_seen
                     )
                 )
-                print(msg.text if not args.html else msg.html)
+                if args.ATTACHMENT:
+                    for att in msg.attachments:
+                        if att.filename == args.ATTACHMENT:
+                            sys.stdout.buffer.write(att.payload)
+                            return 0
+                    print(
+                        f"Attachment {args.ATTACHMENT} not found",
+                        file=sys.stderr,
+                    )
+                    return 1
+                else:
+                    if args.raw:
+                        print(msg.obj.as_string())
+                        return 0
+                    print(msg.text if not args.html else msg.html)
+                    for att in msg.attachments:
+                        print(f"📎 Attachment: {att.filename}", file=sys.stderr)
                 return 0
 
             for msg in mailbox.fetch(
@@ -81,11 +107,13 @@ def main():
                 bulk=True,
                 limit=args.count,
                 mark_seen=args.mark_seen,
-                headers_only=True,
+                headers_only=False,  # required for attachments
             ):
+                subj_suffix = "📎 " if len(msg.attachments) > 0 else ""
                 table.add_row(
                     msg.uid if msg.uid else "???",
-                    msg.subject if msg.subject else "<no-subject>",
+                    subj_suffix
+                    + (msg.subject if msg.subject else "<no-subject>"),
                     msg.from_,
                     msg.date.strftime("%H:%M %d/%m/%Y") if msg.date else "???",
                 )
