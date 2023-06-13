@@ -22,7 +22,7 @@ dependencies = [
   "rich",
   "xmltodict"
 ]
-version = "0.8.0"
+version = "0.8.1"
 
 [tool.black]
 line-length = 79
