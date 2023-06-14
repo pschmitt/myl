@@ -28,8 +28,13 @@ jobs:
             previous_tag="$(git log --reverse --format="format:%H" | head -1)"
           fi
 
-          changelog=$(git log ${previous_tag}..${current_tag} --oneline --no-merges --pretty=format:"%h %s")
-          echo "changelog=$changelog" > $GITHUB_OUTPUT
+          changelog=$(git log "${previous_tag}..${current_tag}" \
+            --oneline --no-merges --pretty=format:"%h %s")
+
+          echo "changelog:"
+          echo "$changelog"
+
+          echo "changelog=${changelog}" > "$GITHUB_OUTPUT"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
