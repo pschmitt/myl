@@ -18,10 +18,16 @@ jobs:
       - name: Generate Changelog
         id: changelog
         run: |-
-          last_tag=$(git describe --tags --abbrev=0)
-          [[ -z "$last_tag" ]] && last_tag="$(git log --reverse --format="format:%H" | head -1)"
-          changelog=$(git log ${last_tag}..HEAD --oneline --no-merges --pretty=format:"%h %s")
-          echo "::set-output name=changelog::$changelog"
+          current_tag=$(git describe --tags --abbrev=0)
+          previous_tag=$(git describe --tags --abbrev=0 "^${current_tag}")
+
+          if [[ -z "$previous_tag" ]]
+          then
+            previous_tag="$(git log --reverse --format="format:%H" | head -1)"
+          fi
+
+          changelog=$(git log ${previous_tag}..${current_tag} --oneline --no-merges --pretty=format:"%h %s")
+          echo "changelog=$changelog" > $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
