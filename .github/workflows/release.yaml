@@ -16,10 +16,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Generate Changelog
-        uses: Bullrich/generate-release-changelog@master
         id: changelog
-        env:
-          REPO: ${{ github.repository }}
+        run: |-
+          last_tag=$(git describe --tags --abbrev=0)
+          [[ -z "$last_tag" ]] && last_tag="$(git log --reverse --format="format:%H" | head -1)"
+          changelog=$(git log ${last_tag}..HEAD --oneline --no-merges --pretty=format:"%h %s")
+          echo "::set-output name=changelog::$changelog"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
