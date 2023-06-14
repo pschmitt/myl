@@ -1,34 +1,31 @@
-name: Upload Python Package
+name: Create Release and Generate Changelog
 
 on:
-  release:
-    types: [created]
   push:
     tags:
       - '*'
+  workflow_dispatch:
 
 jobs:
-  pypi-publish:
-    name: Upload release to PyPI
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/myl
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
+      - name: Generate Changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issues: true
+          issuesWoLabels: true
+          pullRequests: true
+          unreleased: true
+          futureRelease: "${{ github.ref }}"
+          output: "CHANGELOG.md"
 
-    - name: python build
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install --upgrade build
-        python -m build
-
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
