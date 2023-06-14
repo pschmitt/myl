@@ -21,7 +21,7 @@ straightforward way to interact with IMAP servers.
 - Output HTML email
 - Output raw email
 - Fetch a specific mail by ID
-- Fetch a specific attachment (outputs to stdout)
+- Fetch a specific attachment
 
 ## 🚀 Installation
 
@@ -45,7 +45,7 @@ Here are some examples of using flags with the `myl` command:
 
 ```bash
 # Connect to an IMAP server
-myl --server imap.example.com --username $username --password "$password"
+myl --server imap.example.com --port 143 --starttls --username "$username" --password "$password"
 
 # Use Google IMAP settings
 myl --google --username "$username" --password "$password"
@@ -53,32 +53,32 @@ myl --google --username "$username" --password "$password"
 # Autodiscovery of the required server and port
 myl --auto --username "$username" --password "$password"
 
+# We won't repeat the server connection flags from here
+alias myl="command myl --auth --username \"$username\" --password \"$password\""
+
 # Fetch a specific number of messages
-myl --count 5 --username "$username" --password "$password"
+myl --count 5
 
 # Mark messages as seen
-myl --mark-seen --username "$username" --password "$password"
+myl --mark-seen
 
 # Fetch messages from a specific folder
-myl --folder "INBOX" --username "$username" --password "$password"
+myl --folder "INBOX"
 
 # Search for specific strings in messages
-myl --search "important" --username "$username" --password "$password"
-
-# Show raw email
-myl --raw --username "$username" --password "$password"
+myl --search "important"
 
 # Fetch a specific mail ID
-myl --username "$username" --password "$password" "$MAILID"
+myl "$MAILID"
 
 # Show HTML
-myl --html --username "$username" --password "$password" "$MAILID"
+myl --html "$MAILID"
 
 # raw email
-myl --raw --username "$username" --password "$password" "$MAILID" > email.eml
+myl --raw "$MAILID" > email.eml
 
 # Fetch a specific attachment (outputs to stdout)
-myl --username "$username" --password "$password" "$MAILID" "$ATT" > att.txt
+myl "$MAILID" "$ATT" > att.txt
 ```
 
 Please replace `imap.example.com`, `$username`, `$password`, `$MAILID`,
