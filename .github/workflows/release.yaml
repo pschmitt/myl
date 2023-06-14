@@ -19,7 +19,7 @@ jobs:
         id: changelog
         run: |-
           current_tag=$(git describe --tags --abbrev=0)
-          previous_tag=$(git describe --tags --abbrev=0 "^${current_tag}")
+          previous_tag=$(git describe --tags --abbrev=0 "${current_tag}^")
 
           if [[ -z "$previous_tag" ]]
           then
