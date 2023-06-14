@@ -34,7 +34,7 @@ jobs:
           echo "changelog:"
           echo "$changelog"
 
-          echo "changelog=${changelog}" > "$GITHUB_OUTPUT"
+          echo "changelog=${changelog}" >> "$GITHUB_OUTPUT"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
