@@ -54,7 +54,7 @@ myl --google --username "$username" --password "$password"
 myl --auto --username "$username" --password "$password"
 
 # We won't repeat the server connection flags from here
-alias myl="command myl --auth --username \"$username\" --password \"$password\""
+alias myl="command myl --auto --username \"$username\" --password \"$password\""
 
 # Fetch a specific number of messages
 myl --count 5
