@@ -124,6 +124,7 @@ def main():
             args.server = settings.get("server")
             args.port = settings.get("port", IMAP_PORT)
             args.starttls = settings.get("starttls")
+
         if args.sent:
             args.folder = "Sent"
 
@@ -190,10 +191,10 @@ def main():
                 mark_seen=args.mark_seen,
                 headers_only=False,  # required for attachments
             ):
-                subj_suffix = "📎 " if len(msg.attachments) > 0 else ""
+                subj_prefix = "📎 " if len(msg.attachments) > 0 else ""
                 table.add_row(
                     msg.uid if msg.uid else "???",
-                    subj_suffix
+                    subj_prefix
                     + (msg.subject if msg.subject else "<no-subject>"),
                     msg.from_,
                     msg.date.strftime("%H:%M %d/%m/%Y") if msg.date else "???",
