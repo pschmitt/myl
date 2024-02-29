@@ -20,7 +20,7 @@ dependencies = [
   "myl-discovery == 0.5.7",
   "rich >= 13.7.0",
 ]
-version = "0.8.6"
+version = "0.8.7"
 
 [tool.black]
 line-length = 79
