@@ -180,7 +180,9 @@ def main():
                         return 0
                     print(msg.text if not args.html else msg.html)
                     for att in msg.attachments:
-                        print(f"📎 Attachment: {att.filename}", file=sys.stderr)
+                        print(
+                            f"📎 Attachment: {att.filename}", file=sys.stderr
+                        )
                 return 0
 
             for msg in mailbox.fetch(
