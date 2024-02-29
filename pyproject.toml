@@ -17,8 +17,8 @@ classifiers = [
 ]
 dependencies = [
   "imap-tools == 1.5.0",
-  "myl-discovery == 0.5.6",
-  "rich == 13.7.1",
+  "myl-discovery == 0.5.7",
+  "rich >= 13.7.0",
 ]
 version = "0.8.6"
 
