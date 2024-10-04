@@ -16,7 +16,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "imap-tools == 1.7.2",
+  "imap-tools == 1.7.3",
   "myl-discovery == 0.5.7",
   "rich >= 13.7.0",
 ]
