@@ -20,7 +20,13 @@ dependencies = [
   "myl-discovery >= 0.5.7",
   "rich >= 13.0.0, <14.0.0",
 ]
-version = "0.8.7"
+version = "0.8.8"
+
+[project.urls]
+homepage = "https://github.com/pschmitt/myl"
+documentation = "https://github.com/pschmitt/myl/blob/head/readme.md"
+repository = "https://github.com/pschmitt/myl"
+issues = "https://github.com/pschmitt/myl/issues"
 
 [tool.black]
 line-length = 79
