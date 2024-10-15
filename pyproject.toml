@@ -16,9 +16,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "imap-tools == 1.7.3",
-  "myl-discovery == 0.5.7",
-  "rich >= 13.7.0",
+  "imap-tools >= 1.5.0, < 2.0.0",
+  "myl-discovery >= 0.5.7",
+  "rich >= 13.0.0, <14.0.0",
 ]
 version = "0.8.7"
 
