@@ -19,6 +19,7 @@ dependencies = [
   "imap-tools >= 1.5.0, < 2.0.0",
   "myl-discovery >= 0.6.0",
   "rich >= 13.0.0, <14.0.0",
+  "html2text >= 2024.2.26"
 ]
 version = "0.8.10"
 

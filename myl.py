@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
 import argparse
+import html2text
 import json
 import logging
 import ssl
@@ -234,7 +238,13 @@ def main():
                         )
                         return 0
 
-                    print(msg.text if not args.html else msg.html)
+                    output = msg.text
+                    if args.html:
+                        if args.raw:
+                            output = msg.html
+                        else:
+                            output = html2text.html2text(msg.html)
+                    print(output)
                     for att in msg.attachments:
                         print(
                             f"📎 Attachment: {att.filename}", file=sys.stderr
