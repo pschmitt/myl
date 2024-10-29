@@ -81,7 +81,6 @@ def parse_args():
         action="store_true",
     )
     parser.add_argument("-S", "--search", help="Search string", default="ALL")
-    parser.add_argument("-w", "--wrap", help="Wrap text", action="store_true")
     parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
     parser.add_argument(
         "-r",
@@ -148,18 +147,19 @@ def main():
         return 2
 
     table = Table(
-        expand=True,
         show_header=not args.no_title,
         header_style="bold",
+        expand=True,
         show_lines=False,
+        show_edge=False,
+        pad_edge=False,
         box=None,
+        row_styles=["", "dim"],
     )
-    table.add_column("ID", style="red", no_wrap=not args.wrap, max_width=10)
-    table.add_column(
-        "Subject", style="green", no_wrap=not args.wrap, max_width=30
-    )
-    table.add_column("From", style="blue", no_wrap=not args.wrap, max_width=30)
-    table.add_column("Date", style="cyan", no_wrap=not args.wrap)
+    table.add_column("ID", style="red", no_wrap=True)
+    table.add_column("Subject", style="green", no_wrap=True, ratio=3)
+    table.add_column("From", style="blue", no_wrap=True, ratio=2)
+    table.add_column("Date", style="cyan", no_wrap=True)
 
     ssl_context = ssl.create_default_context()
     if args.insecure:
@@ -216,10 +216,14 @@ def main():
                 headers_only=False,  # required for attachments
             ):
                 subj_prefix = "📎 " if len(msg.attachments) > 0 else ""
+                subject = (
+                    msg.subject.replace("\n", "")
+                    if msg.subject
+                    else "<no-subject>"
+                )
                 table.add_row(
                     msg.uid if msg.uid else "???",
-                    subj_prefix
-                    + (msg.subject if msg.subject else "<no-subject>"),
+                    f"{subj_prefix}{subject}",
                     msg.from_,
                     msg.date.strftime("%H:%M %d/%m/%Y") if msg.date else "???",
                 )
