@@ -154,6 +154,7 @@ def main():
         )
         return 2
 
+    json_data = []
     table = Table(
         show_header=not args.no_title,
         header_style="bold",
@@ -254,16 +255,41 @@ def main():
                     if msg.subject
                     else "<no-subject>"
                 )
-                table.add_row(
-                    msg.uid if msg.uid else "???",
-                    f"{subj_prefix}{subject}",
-                    msg.from_,
-                    msg.date.strftime("%H:%M %d/%m/%Y") if msg.date else "???",
-                )
+                if args.json:
+                    json_data.append(
+                        {
+                            "uid": msg.uid,
+                            "subject": msg.subject,
+                            "from": msg.from_,
+                            "to": msg.to,
+                            "date": msg.date.strftime("%Y-%m-%d %H:%M:%S"),
+                            "timestamp": str(int(msg.date.timestamp())),
+                            "content": {
+                                "raw": msg.obj.as_string(),
+                                "html": msg.html,
+                                "text": msg.text,
+                            },
+                            "attachments": msg.attachments,
+                        }
+                    )
+                else:
+                    table.add_row(
+                        msg.uid if msg.uid else "???",
+                        f"{subj_prefix}{subject}",
+                        msg.from_,
+                        (
+                            msg.date.strftime("%H:%M %d/%m/%Y")
+                            if msg.date
+                            else "???"
+                        ),
+                    )
                 if len(table.rows) >= args.count:
                     break
 
-        console.print(table)
+        if args.json:
+            print_json(json.dumps(json_data))
+        else:
+            console.print(table)
         return 0
     except Exception:
         console.print_exception(show_locals=True)
