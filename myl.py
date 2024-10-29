@@ -1,11 +1,12 @@
 import argparse
+import json
 import logging
 import ssl
 import sys
 
 import imap_tools
 from myldiscovery import autodiscover
-from rich import print
+from rich import print, print_json
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
@@ -82,6 +83,13 @@ def parse_args():
     )
     parser.add_argument("-S", "--search", help="Search string", default="ALL")
     parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
+    parser.add_argument(
+        "-j",
+        "--json",
+        help="JSON output",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument(
         "-r",
         "--raw",
@@ -200,6 +208,31 @@ def main():
                     if args.raw:
                         print(msg.obj.as_string())
                         return 0
+                    elif args.json:
+                        print_json(
+                            json.dumps(
+                                {
+                                    "uid": msg.uid,
+                                    "subject": msg.subject,
+                                    "from": msg.from_,
+                                    "to": msg.to,
+                                    "date": msg.date.strftime(
+                                        "%Y-%m-%d %H:%M:%S"
+                                    ),
+                                    "timestamp": str(
+                                        int(msg.date.timestamp())
+                                    ),
+                                    "content": {
+                                        "raw": msg.obj.as_string(),
+                                        "html": msg.html,
+                                        "text": msg.text,
+                                    },
+                                    "attachments": msg.attachments,
+                                }
+                            )
+                        )
+                        return 0
+
                     print(msg.text if not args.html else msg.html)
                     for att in msg.attachments:
                         print(
