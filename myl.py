@@ -1,5 +1,6 @@
 import argparse
 import logging
+import ssl
 import sys
 
 import imap_tools
@@ -44,8 +45,15 @@ def parse_args():
     parser.add_argument(
         "-P", "--port", help="IMAP server port", default=IMAP_PORT
     )
+    parser.add_argument("--ssl", help="SSL", action="store_true", default=True)
     parser.add_argument(
-        "--starttls", help="Start TLS", action="store_true", default=False
+        "--starttls", help="STARTTLS", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--insecure",
+        help="Disable cert validation",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "-c",
@@ -124,6 +132,7 @@ def main():
             args.server = settings.get("server")
             args.port = settings.get("port", IMAP_PORT)
             args.starttls = settings.get("starttls")
+            args.ssl = settings.get("ssl")
 
         if args.sent:
             args.folder = "Sent"
@@ -152,10 +161,23 @@ def main():
     table.add_column("From", style="blue", no_wrap=not args.wrap, max_width=30)
     table.add_column("Date", style="cyan", no_wrap=not args.wrap)
 
-    mb = imap_tools.MailBoxTls if args.starttls else imap_tools.MailBox
+    ssl_context = ssl.create_default_context()
+    if args.insecure:
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+    mb_kwargs = {"host": args.server, "port": args.port}
+    if args.ssl:
+        mb = imap_tools.MailBox
+        mb_kwargs["ssl_context"] = ssl_context
+    elif args.starttls:
+        mb = imap_tools.MailBoxTls
+        mb_kwargs["ssl_context"] = ssl_context
+    else:
+        mb = imap_tools.MailBoxUnencrypted
 
     try:
-        with mb(args.server, port=args.port).login(
+        with mb(**mb_kwargs).login(
             args.username, args.password, args.folder
         ) as mailbox:
             if args.MAILID:
