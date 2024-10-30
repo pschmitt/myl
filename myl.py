@@ -73,8 +73,12 @@ def parse_args():
     parser.add_argument(
         "-u", "--username", help="IMAP username", required=True
     )
-    parser.add_argument(
-        "-p", "--password", help="IMAP password", required=True
+    password_group = parser.add_mutually_exclusive_group(required=True)
+    password_group.add_argument("-p", "--password", help="IMAP password")
+    password_group.add_argument(
+        "--password-file",
+        help="IMAP password (file path)",
+        type=argparse.FileType("r"),
     )
     parser.add_argument(
         "-t", "--no-title", help="Do not show title", action="store_true"
@@ -119,6 +123,10 @@ def main():
     )
     LOGGER.debug(args)
 
+    imap_password = args.password or (
+        args.password_file and args.password_file.read()
+    )
+
     if args.google:
         args.server = GMAIL_IMAP_SERVER
         args.port = GMAIL_IMAP_PORT
@@ -132,7 +140,7 @@ def main():
         if args.auto:
             try:
                 settings = autodiscover(
-                    args.username, password=args.password
+                    args.username, password=imap_password
                 ).get("imap")
             except Exception:
                 error_msg("Failed to autodiscover IMAP settings")
@@ -191,7 +199,7 @@ def main():
 
     try:
         with mb(**mb_kwargs).login(
-            args.username, args.password, args.folder
+            args.username, imap_password, args.folder
         ) as mailbox:
             if args.MAILID:
                 msg = next(
