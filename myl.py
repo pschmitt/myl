@@ -301,13 +301,15 @@ def main():
                             else "???"
                         ),
                     )
-                if len(table.rows) >= args.count:
+                if table.row_count >= args.count:
                     break
 
         if args.json:
             print_json(json.dumps(json_data))
         else:
             console.print(table)
+            if table.row_count == 0:
+                print("[yellow italic]No messages[/yellow italic]", file=sys.stderr)
         return 0
     except Exception:
         console.print_exception(show_locals=True)
