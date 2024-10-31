@@ -21,7 +21,11 @@ dependencies = [
   "rich >= 13.0.0, <14.0.0",
   "html2text >= 2024.2.26"
 ]
-version = "0.9.0"
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+write_to = "version.txt"
+version_file = "_version.py"
 
 [project.urls]
 homepage = "https://github.com/pschmitt/myl"

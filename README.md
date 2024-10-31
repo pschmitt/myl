@@ -27,15 +27,23 @@ straightforward way to interact with IMAP servers.
 
 To install myl, follow these steps:
 
-```bash
+```shell
 pipx install myl
+# or:
+pip install --user myl
+```
+
+on nix you can do this:
+
+```shell
+nix run github.com:pschmitt/myl
 ```
 
 ## 🛠️ Usage
 
 Here's how you can use myl:
 
-```bash
+```shell
 myl --help
 ```
 
@@ -43,7 +51,7 @@ This command will display the help information for the `myl` command.
 
 Here are some examples of using flags with the `myl` command:
 
-```bash
+```shell
 # Connect to an IMAP server
 myl --server imap.example.com --port 143 --starttls --username "$username" --password "$password"
 
