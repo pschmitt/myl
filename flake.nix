@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    myl-discovery.url = "github:pschmitt/myl-discovery";
   };
 
   outputs =
@@ -11,6 +12,7 @@
       self,
       nixpkgs,
       flake-utils,
+      myl-discovery,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
@@ -33,48 +35,13 @@
           propagatedBuildInputs = with pkgs.python3Packages; [
             html2text
             imap-tools
-            self.packages.${system}.myl-discovery
+            myl-discovery.packages.${system}.myl-discovery
             rich
           ];
 
           meta = {
             description = "Dead simple IMAP CLI client";
             homepage = "https://pypi.org/project/myl/";
-            license = pkgs.lib.licenses.gpl3Only;
-            maintainers = with pkgs.lib.maintainers; [ pschmitt ];
-            platforms = pkgs.lib.platforms.all;
-          };
-        };
-
-        mylDiscovery = pkgs.python3Packages.buildPythonApplication rec {
-          pname = "myl-discovery";
-          version = "0.6.1";
-          pyproject = true;
-
-          src = pkgs.fetchPypi {
-            pname = "myl_discovery";
-            inherit version;
-            sha256 = "sha256-5ulMzqd9YovEYCKO/B2nLTEvJC+bW76pJtDu1cNXLII=";
-          };
-
-          buildInputs = [
-            pkgs.python3Packages.setuptools
-            pkgs.python3Packages.setuptools-scm
-          ];
-
-          propagatedBuildInputs = with pkgs.python3Packages; [
-            dnspython
-            exchangelib
-            requests
-            rich
-            xmltodict
-          ];
-
-          pythonImportsCheck = [ "myldiscovery" ];
-
-          meta = {
-            description = "Email autodiscovery";
-            homepage = "https://pypi.org/project/myl-discovery/";
             license = pkgs.lib.licenses.gpl3Only;
             maintainers = with pkgs.lib.maintainers; [ pschmitt ];
             platforms = pkgs.lib.platforms.all;
@@ -127,7 +94,6 @@
       {
         # pkgs
         packages.myl = myl;
-        packages."myl-discovery" = mylDiscovery;
         defaultPackage = myl;
 
         devShells.default = devShell;
