@@ -2,13 +2,20 @@
 # coding: utf-8
 
 import argparse
-import html2text
-import json
 import logging
 import ssl
 import sys
+from json import dumps as json_dumps
 
-import imap_tools
+import html2text
+from imap_tools.consts import MailMessageFlags
+from imap_tools.mailbox import (
+    BaseMailBox,
+    MailBox,
+    MailBoxTls,
+    MailBoxUnencrypted,
+)
+from imap_tools.query import AND
 from myldiscovery import autodiscover
 from rich import print, print_json
 from rich.console import Console
@@ -23,32 +30,84 @@ GMAIL_SENT_FOLDER = "[Gmail]/Sent Mail"
 # GMAIL_ALL_FOLDER = "[Gmail]/All Mail"
 
 
+class MissingServerException(Exception):
+    pass
+
+
 def error_msg(msg):
     print(f"[red]{msg}[/red]", file=sys.stderr)
 
 
-def mail_to_json(msg):
-    return json.dumps(
-        {
-            "uid": msg.uid,
-            "subject": msg.subject,
-            "from": msg.from_,
-            "to": msg.to,
-            "date": msg.date.strftime("%Y-%m-%d %H:%M:%S"),
-            "timestamp": str(int(msg.date.timestamp())),
-            "content": {
-                "raw": msg.obj.as_string(),
-                "html": msg.html,
-                "text": msg.text,
-            },
-            "attachments": msg.attachments,
-        }
-    )
+def mail_to_dict(msg, date_format="%Y-%m-%d %H:%M:%S"):
+    return {
+        "uid": msg.uid,
+        "subject": msg.subject,
+        "from": msg.from_,
+        "to": msg.to,
+        "date": msg.date.strftime(date_format),
+        "timestamp": str(int(msg.date.timestamp())),
+        "unread": MailMessageFlags.SEEN not in msg.flags,
+        "flags": msg.flags,
+        "content": {
+            "raw": msg.obj.as_string(),
+            "html": msg.html,
+            "text": msg.text,
+        },
+        "attachments": msg.attachments,
+    }
+
+
+def mail_to_json(msg, date_format="%Y-%m-%d %H:%M:%S"):
+    return json_dumps(mail_to_dict(msg, date_format))
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--debug", help="Debug", action="store_true")
+    subparsers = parser.add_subparsers(
+        dest="command", help="Available commands"
+    )
+
+    # Default command: list all emails
+    subparsers.add_parser("list", help="List all emails")
+
+    # Get/show email command
+    get_parser = subparsers.add_parser(
+        "get", help="Retrieve a specific email or attachment"
+    )
+    get_parser.add_argument("MAILID", help="Mail ID to fetch", type=int)
+    get_parser.add_argument(
+        "ATTACHMENT",
+        help="Name of the attachment to fetch",
+        nargs="?",
+        default=None,
+    )
+
+    # Delete email command
+    delete_parser = subparsers.add_parser("delete", help="Delete an email")
+    delete_parser.add_argument(
+        "MAILIDS", help="Mail ID(s) to delete", type=int, nargs="+"
+    )
+
+    # Mark email as read/unread
+    mark_read_parser = subparsers.add_parser(
+        "read", help="mark an email as read"
+    )
+    mark_read_parser.add_argument(
+        "MAILIDS", help="Mail ID(s) to mark as read", type=int, nargs="+"
+    )
+    mark_unread_parser = subparsers.add_parser(
+        "unread", help="mark an email as unread"
+    )
+    mark_unread_parser.add_argument(
+        "MAILIDS", help="Mail ID(s) to mark as unread", type=int, nargs="+"
+    )
+
+    # Optional arguments
+    parser.add_argument(
+        "-d", "--debug", help="Enable debug mode", action="store_true"
+    )
+
+    # IMAP connection settings
     parser.add_argument(
         "-s", "--server", help="IMAP server address", required=False
     )
@@ -64,7 +123,7 @@ def parse_args():
         "--auto",
         help="Autodiscovery of the required server and port",
         action="store_true",
-        default=False,
+        default=True,
     )
     parser.add_argument(
         "-P", "--port", help="IMAP server port", default=IMAP_PORT
@@ -79,16 +138,8 @@ def parse_args():
         action="store_true",
         default=False,
     )
-    parser.add_argument(
-        "-c",
-        "--count",
-        help="Number of messages to fetch",
-        default=10,
-        type=int,
-    )
-    parser.add_argument(
-        "-m", "--mark-seen", help="Mark seen", action="store_true"
-    )
+
+    # Credentials
     parser.add_argument(
         "-u", "--username", help="IMAP username", required=True
     )
@@ -99,12 +150,32 @@ def parse_args():
         help="IMAP password (file path)",
         type=argparse.FileType("r"),
     )
+
+    # Display preferences
+    parser.add_argument(
+        "-c",
+        "--count",
+        help="Number of messages to fetch",
+        default=10,
+        type=int,
+    )
     parser.add_argument(
         "-t", "--no-title", help="Do not show title", action="store_true"
     )
     parser.add_argument(
         "--date-format", help="Date format", default="%H:%M %d/%m/%Y"
     )
+
+    # IMAP actions
+    parser.add_argument(
+        "-m",
+        "--mark-seen",
+        help="Mark seen",
+        action="store_true",
+        default=False,
+    )
+
+    # Email filtering
     parser.add_argument("-f", "--folder", help="IMAP folder", default="INBOX")
     parser.add_argument(
         "--sent",
@@ -112,7 +183,21 @@ def parse_args():
         action="store_true",
     )
     parser.add_argument("-S", "--search", help="Search string", default="ALL")
-    parser.add_argument("-H", "--html", help="Show HTML", action="store_true")
+    parser.add_argument(
+        "--unread",
+        help="Limit to unread emails",
+        action="store_true",
+        default=False,
+    )
+
+    # Output preferences
+    parser.add_argument(
+        "-H",
+        "--html",
+        help="Show HTML email",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument(
         "-j",
         "--json",
@@ -127,24 +212,11 @@ def parse_args():
         action="store_true",
         default=False,
     )
-    parser.add_argument("MAILID", help="Mail ID to fetch", nargs="?")
-    parser.add_argument(
-        "ATTACHMENT", help="Name of the attachment to fetch", nargs="?"
-    )
 
     return parser.parse_args()
 
 
-def main():
-    console = Console()
-    args = parse_args()
-    logging.basicConfig(
-        format="%(message)s",
-        handlers=[RichHandler(console=console)],
-        level=logging.DEBUG if args.debug else logging.INFO,
-    )
-    LOGGER.debug(args)
-
+def mb_connect(console, args) -> BaseMailBox:
     imap_password = args.password or (
         args.password_file and args.password_file.read()
     )
@@ -165,12 +237,13 @@ def main():
                     args.username,
                     password=imap_password,
                     insecure=args.insecure,
-                ).get("imap")
+                ).get("imap", {})
             except Exception:
                 error_msg("Failed to autodiscover IMAP settings")
                 if args.debug:
                     console.print_exception(show_locals=True)
-                return 1
+                raise
+
             LOGGER.debug(f"Discovered settings: {settings})")
             args.server = settings.get("server")
             args.port = settings.get("port", IMAP_PORT)
@@ -188,11 +261,87 @@ def main():
             "- set --google if you are using a Gmail account\n"
             "- use --auto to attempt autodiscovery"
         )
-        return 2
+        raise MissingServerException()
 
+    ssl_context = ssl.create_default_context()
+    if args.insecure:
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+    mb_kwargs = {"host": args.server, "port": args.port}
+    if args.ssl:
+        mb = MailBox
+        mb_kwargs["ssl_context"] = ssl_context
+    elif args.starttls:
+        mb = MailBoxTls
+        mb_kwargs["ssl_context"] = ssl_context
+    else:
+        mb = MailBoxUnencrypted
+
+    mailbox = mb(**mb_kwargs)
+    mailbox.login(args.username, imap_password, args.folder)
+    return mailbox
+
+
+def display_single_mail(
+    mailbox: BaseMailBox,
+    mail_id: int,
+    attachment: str | None = None,
+    mark_seen: bool = False,
+    raw: bool = False,
+    html: bool = False,
+    json: bool = False,
+):
+    LOGGER.debug("Fetch mail %s", mail_id)
+    msg = next(mailbox.fetch(f"UID {mail_id}", mark_seen=mark_seen))
+    LOGGER.debug("Fetched mail %s", msg)
+
+    if attachment:
+        for att in msg.attachments:
+            if att.filename == attachment:
+                sys.stdout.buffer.write(att.payload)
+                return 0
+        print(
+            f"attachment {attachment} not found",
+            file=sys.stderr,
+        )
+        return 1
+
+    if html:
+        output = msg.text
+        if raw:
+            output = msg.html
+        else:
+            output = html2text.html2text(msg.html)
+        print(output)
+    elif raw:
+        print(msg.obj.as_string())
+        return 0
+    elif json:
+        print_json(mail_to_json(msg))
+        return 0
+    else:
+        print(msg.text)
+
+    for att in msg.attachments:
+        print(f"📎 Attachment: {att.filename}", file=sys.stderr)
+    return 0
+
+
+def display_emails(
+    mailbox,
+    console,
+    no_title=False,
+    search="ALL",
+    unread_only=False,
+    count=10,
+    mark_seen=False,
+    json=False,
+    date_format="%H:%M %d/%m/%Y",
+):
     json_data = []
     table = Table(
-        show_header=not args.no_title,
+        show_header=not no_title,
         header_style="bold",
         expand=True,
         show_lines=False,
@@ -206,102 +355,129 @@ def main():
     table.add_column("From", style="blue", no_wrap=True, ratio=2)
     table.add_column("Date", style="cyan", no_wrap=True)
 
-    ssl_context = ssl.create_default_context()
-    if args.insecure:
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+    if unread_only:
+        search = AND(seen=False)
 
-    mb_kwargs = {"host": args.server, "port": args.port}
-    if args.ssl:
-        mb = imap_tools.MailBox
-        mb_kwargs["ssl_context"] = ssl_context
-    elif args.starttls:
-        mb = imap_tools.MailBoxTls
-        mb_kwargs["ssl_context"] = ssl_context
+    for msg in mailbox.fetch(
+        criteria=search,
+        reverse=True,
+        bulk=True,
+        limit=count,
+        mark_seen=mark_seen,
+        headers_only=False,  # required for attachments
+    ):
+        subj_prefix = "📎 " if len(msg.attachments) > 0 else ""
+        subject = (
+            msg.subject.replace("\n", "") if msg.subject else "<no-subject>"
+        )
+        if json:
+            json_data.append(mail_to_dict(msg))
+        else:
+            table.add_row(
+                msg.uid if msg.uid else "???",
+                f"{subj_prefix}{subject}",
+                msg.from_,
+                (msg.date.strftime(date_format) if msg.date else "???"),
+            )
+        if table.row_count >= count:
+            break
+
+    if json:
+        print_json(json_dumps(json_data))
     else:
-        mb = imap_tools.MailBoxUnencrypted
+        console.print(table)
+        if table.row_count == 0:
+            print(
+                "[yellow italic]No messages[/yellow italic]",
+                file=sys.stderr,
+            )
+    return 0
+
+
+def delete_emails(mailbox: BaseMailBox, mail_ids: list):
+    LOGGER.warning("Deleting mails %s", mail_ids)
+    return mailbox.delete([str(x) for x in mail_ids])
+
+
+def set_seen(mailbox: BaseMailBox, mail_ids: list, value=True):
+    LOGGER.info(
+        "Marking mails as %s: %s", "read" if value else "unread", mail_ids
+    )
+    mailbox.flag(
+        [str(x) for x in mail_ids],
+        flag_set=(MailMessageFlags.SEEN),
+        value=value,
+    )
+    return 0
+
+
+def mark_read(mailbox: BaseMailBox, mail_ids: list):
+    return set_seen(mailbox, mail_ids, value=True)
+
+
+def mark_unread(mailbox: BaseMailBox, mail_ids: list):
+    return set_seen(mailbox, mail_ids, value=False)
+
+
+def main():
+    console = Console()
+    args = parse_args()
+    logging.basicConfig(
+        format="%(message)s",
+        handlers=[RichHandler(console=console)],
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
+    LOGGER.debug(args)
 
     try:
-        with mb(**mb_kwargs).login(
-            args.username, imap_password, args.folder
-        ) as mailbox:
-            if args.MAILID:
-                msg = next(
-                    mailbox.fetch(
-                        f"UID {args.MAILID}", mark_seen=args.mark_seen
-                    )
+        with mb_connect(console, args) as mailbox:
+            # inbox display
+            if args.command in ["list", None]:
+                return display_emails(
+                    mailbox=mailbox,
+                    console=console,
+                    no_title=args.no_title,
+                    search=args.search,
+                    unread_only=args.unread,
+                    count=args.count,
+                    mark_seen=args.mark_seen,
+                    json=args.json,
+                    date_format=args.date_format,
                 )
-                if args.ATTACHMENT:
-                    for att in msg.attachments:
-                        if att.filename == args.ATTACHMENT:
-                            sys.stdout.buffer.write(att.payload)
-                            return 0
-                    print(
-                        f"Attachment {args.ATTACHMENT} not found",
-                        file=sys.stderr,
-                    )
-                    return 1
-                else:
-                    if args.raw:
-                        print(msg.obj.as_string())
-                        return 0
-                    elif args.json:
-                        print_json(mail_to_json(msg))
-                        return 0
 
-                    output = msg.text
-                    if args.html:
-                        if args.raw:
-                            output = msg.html
-                        else:
-                            output = html2text.html2text(msg.html)
-                    print(output)
-                    for att in msg.attachments:
-                        print(
-                            f"📎 Attachment: {att.filename}", file=sys.stderr
-                        )
-                return 0
-
-            for msg in mailbox.fetch(
-                criteria=args.search,
-                reverse=True,
-                bulk=True,
-                limit=args.count,
-                mark_seen=args.mark_seen,
-                headers_only=False,  # required for attachments
-            ):
-                subj_prefix = "📎 " if len(msg.attachments) > 0 else ""
-                subject = (
-                    msg.subject.replace("\n", "")
-                    if msg.subject
-                    else "<no-subject>"
+            # single email
+            # FIXME $ myl 219 raises an argparse error
+            elif args.command in ["get", "show", "display"]:
+                return display_single_mail(
+                    mailbox=mailbox,
+                    mail_id=args.MAILID,
+                    attachment=args.ATTACHMENT,
+                    mark_seen=args.mark_seen,
+                    raw=args.raw,
+                    html=args.html,
+                    json=args.json,
                 )
-                if args.json:
-                    json_data.append(mail_to_json(msg))
-                else:
-                    table.add_row(
-                        msg.uid if msg.uid else "???",
-                        f"{subj_prefix}{subject}",
-                        msg.from_,
-                        (
-                            msg.date.strftime(args.date_format)
-                            if msg.date
-                            else "???"
-                        ),
-                    )
-                if table.row_count >= args.count:
-                    break
 
-        if args.json:
-            print_json(json.dumps(json_data))
-        else:
-            console.print(table)
-            if table.row_count == 0:
-                print(
-                    "[yellow italic]No messages[/yellow italic]",
-                    file=sys.stderr,
+            # mark emails as read
+            elif args.command in ["read"]:
+                return mark_read(
+                    mailbox=mailbox,
+                    mail_ids=args.MAILIDS,
                 )
-        return 0
+
+            elif args.command in ["unread"]:
+                return mark_unread(
+                    mailbox=mailbox,
+                    mail_ids=args.MAILIDS,
+                )
+
+            # delete email
+            elif args.command in ["delete", "remove"]:
+                return delete_emails(
+                    mailbox=mailbox,
+                    mail_ids=args.MAILIDS,
+                )
+
     except Exception:
         console.print_exception(show_locals=True)
         return 1
