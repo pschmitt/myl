@@ -16,7 +16,7 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = nixpkgs.legacyPackages.${system};
 
         myl = pkgs.python3Packages.buildPythonApplication {
           pname = "myl";
@@ -99,7 +99,7 @@
             pkgs.gh # GitHub CLI
             pkgs.git
             pkgs.python3Packages.ipython
-            pkgs.vim
+            pkgs.neovim
           ];
 
           # Environment variables and shell hooks
