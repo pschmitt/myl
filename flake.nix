@@ -105,7 +105,7 @@
           # Environment variables and shell hooks
           shellHook = ''
             export PYTHONPATH=${self.packages.${system}.myl}/lib/python3.x/site-packages
-            echo "Welcome to the myl development shell!"
+            echo -e "\e[34mWelcome to the myl development shell!\e[0m"
             # Activate a virtual environment if desired
             # source .venv/bin/activate
           '';
