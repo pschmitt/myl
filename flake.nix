@@ -1,81 +1,90 @@
 {
-  description = "flake for myl IMAP CLI client and myl-discovery";
+  description = "Flake for myl IMAP CLI client and myl-discovery, compatible with multiple systems";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { self, nixpkgs }:
-    let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-      };
-    in
     {
-      packages.x86_64-linux.default = self.packages.x86_64-linux.myl;
-      packages.x86_64-linux.myl = pkgs.python3.pkgs.buildPythonApplication {
-        pname = "myl";
-        version = builtins.readFile ./version.txt;
-        pyproject = true;
+      self,
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
 
-        src = ./.;
+        myl = pkgs.python3Packages.buildPythonApplication {
+          pname = "myl";
+          version = builtins.readFile ./version.txt;
+          pyproject = true;
 
-        buildInputs = [
-          pkgs.python3.pkgs.setuptools
-          pkgs.python3.pkgs.setuptools-scm
-        ];
+          src = ./.;
 
-        propagatedBuildInputs = with pkgs.python3.pkgs; [
-          html2text
-          imap-tools
-          self.packages.x86_64-linux.myl-discovery
-          rich
-        ];
+          buildInputs = [
+            pkgs.python3Packages.setuptools
+            pkgs.python3Packages.setuptools-scm
+          ];
 
-        meta = {
-          description = "Dead simple IMAP CLI client";
-          homepage = "https://pypi.org/project/myl/";
-          license = pkgs.lib.licenses.gpl3Only;
-          maintainers = with pkgs.lib.maintainers; [ pschmitt ];
-          mainProgram = "myl";
-        };
-      };
+          propagatedBuildInputs = with pkgs.python3Packages; [
+            html2text
+            imap-tools
+            self.packages.${system}.myl-discovery
+            rich
+          ];
 
-      packages.x86_64-linux.myl-discovery = pkgs.python3.pkgs.buildPythonApplication rec {
-        pname = "myl-discovery";
-        version = "0.6.1";
-        pyproject = true;
-
-        src = pkgs.fetchPypi {
-          pname = "myl_discovery";
-          inherit version;
-          hash = "sha256-5ulMzqd9YovEYCKO/B2nLTEvJC+bW76pJtDu1cNXLII=";
+          meta = {
+            description = "Dead simple IMAP CLI client";
+            homepage = "https://pypi.org/project/myl/";
+            license = pkgs.lib.licenses.gpl3Only;
+            maintainers = with pkgs.lib.maintainers; [ pschmitt ];
+            platforms = pkgs.lib.platforms.all;
+          };
         };
 
-        buildInputs = [
-          pkgs.python3.pkgs.setuptools
-          pkgs.python3.pkgs.setuptools-scm
-        ];
+        mylDiscovery = pkgs.python3Packages.buildPythonApplication rec {
+          pname = "myl-discovery";
+          version = "0.6.1";
+          pyproject = true;
 
-        propagatedBuildInputs = with pkgs.python3.pkgs; [
-          dnspython
-          exchangelib
-          requests
-          rich
-          xmltodict
-        ];
+          src = pkgs.fetchPypi {
+            pname = "myl_discovery";
+            inherit version;
+            sha256 = "sha256-5ulMzqd9YovEYCKO/B2nLTEvJC+bW76pJtDu1cNXLII=";
+          };
 
-        pythonImportsCheck = [ "myldiscovery" ];
+          buildInputs = [
+            pkgs.python3Packages.setuptools
+            pkgs.python3Packages.setuptools-scm
+          ];
 
-        meta = {
-          description = "Email autodiscovery";
-          homepage = "https://pypi.org/project/myl-discovery/";
-          license = pkgs.lib.licenses.gpl3Only;
-          maintainers = with pkgs.lib.maintainers; [ pschmitt ];
-          mainProgram = "myl-discovery";
+          propagatedBuildInputs = with pkgs.python3Packages; [
+            dnspython
+            exchangelib
+            requests
+            rich
+            xmltodict
+          ];
+
+          pythonImportsCheck = [ "myldiscovery" ];
+
+          meta = {
+            description = "Email autodiscovery";
+            homepage = "https://pypi.org/project/myl-discovery/";
+            license = pkgs.lib.licenses.gpl3Only;
+            maintainers = with pkgs.lib.maintainers; [ pschmitt ];
+            platforms = pkgs.lib.platforms.all;
+          };
         };
-      };
-    };
+      in
+      {
+        packages.myl = myl;
+        packages."myl-discovery" = mylDiscovery;
+        defaultPackage = myl;
+      }
+    );
 }
-
