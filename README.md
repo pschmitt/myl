@@ -36,7 +36,7 @@ pip install --user myl
 on nix you can do this:
 
 ```shell
-nix run github.com:pschmitt/myl
+nix run github:pschmitt/myl -- --help
 ```
 
 ## 🛠️ Usage
