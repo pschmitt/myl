@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+from importlib.metadata import version, PackageNotFoundError
 import argparse
 import logging
 import ssl
@@ -21,6 +22,11 @@ from rich import print, print_json
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
+
+try:
+    __version__ = version("myl")
+except PackageNotFoundError:
+    pass
 
 LOGGER = logging.getLogger(__name__)
 IMAP_PORT = 993
@@ -65,10 +71,17 @@ def mail_is_unread(msg):
     return MailMessageFlags.SEEN not in msg.flags
 
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(
         dest="command", help="Available commands"
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
 
     # Default command: list all emails
