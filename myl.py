@@ -46,7 +46,7 @@ def mail_to_dict(msg, date_format="%Y-%m-%d %H:%M:%S"):
         "to": msg.to,
         "date": msg.date.strftime(date_format),
         "timestamp": str(int(msg.date.timestamp())),
-        "unread": MailMessageFlags.SEEN not in msg.flags,
+        "unread": mail_is_unread(msg),
         "flags": msg.flags,
         "content": {
             "raw": msg.obj.as_string(),
@@ -59,6 +59,10 @@ def mail_to_dict(msg, date_format="%Y-%m-%d %H:%M:%S"):
 
 def mail_to_json(msg, date_format="%Y-%m-%d %H:%M:%S"):
     return json_dumps(mail_to_dict(msg, date_format))
+
+
+def mail_is_unread(msg):
+    return MailMessageFlags.SEEN not in msg.flags
 
 
 def parse_args():
@@ -366,7 +370,8 @@ def display_emails(
         mark_seen=mark_seen,
         headers_only=False,  # required for attachments
     ):
-        subj_prefix = "📎 " if len(msg.attachments) > 0 else ""
+        subj_prefix = "🆕 " if mail_is_unread(msg) else ""
+        subj_prefix += "📎 " if len(msg.attachments) > 0 else ""
         subject = (
             msg.subject.replace("\n", "") if msg.subject else "<no-subject>"
         )
@@ -420,7 +425,7 @@ def mark_unread(mailbox: BaseMailBox, mail_ids: list):
     return set_seen(mailbox, mail_ids, value=False)
 
 
-def main():
+def main() -> int:
     console = Console()
     args = parse_args()
     logging.basicConfig(
@@ -478,6 +483,9 @@ def main():
                     mailbox=mailbox,
                     mail_ids=args.MAILIDS,
                 )
+            else:
+                error_msg(f"Unknown command: {args.command}")
+                return 1
 
     except Exception:
         console.print_exception(show_locals=True)
