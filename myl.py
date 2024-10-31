@@ -71,7 +71,6 @@ def mail_is_unread(msg):
     return MailMessageFlags.SEEN not in msg.flags
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(
