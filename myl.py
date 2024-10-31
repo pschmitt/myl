@@ -102,6 +102,9 @@ def parse_args():
     parser.add_argument(
         "-t", "--no-title", help="Do not show title", action="store_true"
     )
+    parser.add_argument(
+        "--date-format", help="Date format", default="%H:%M %d/%m/%Y"
+    )
     parser.add_argument("-f", "--folder", help="IMAP folder", default="INBOX")
     parser.add_argument(
         "--sent",
@@ -281,7 +284,7 @@ def main():
                         f"{subj_prefix}{subject}",
                         msg.from_,
                         (
-                            msg.date.strftime("%H:%M %d/%m/%Y")
+                            msg.date.strftime(args.date_format)
                             if msg.date
                             else "???"
                         ),
