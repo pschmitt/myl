@@ -24,8 +24,9 @@ dependencies = [
 dynamic = ["version"]
 
 [tool.setuptools_scm]
-write_to = "version.txt"
-version_file = "_version.py"
+version_file = "version.txt"
+version_scheme = "only-version"
+local_scheme = "no-local-version"
 
 [project.urls]
 homepage = "https://github.com/pschmitt/myl"
