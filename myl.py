@@ -396,7 +396,8 @@ def display_emails(
 
 def delete_emails(mailbox: BaseMailBox, mail_ids: list):
     LOGGER.warning("Deleting mails %s", mail_ids)
-    return mailbox.delete([str(x) for x in mail_ids])
+    mailbox.delete([str(x) for x in mail_ids])
+    return 0
 
 
 def set_seen(mailbox: BaseMailBox, mail_ids: list, value=True):
