@@ -4,3 +4,4 @@
 build/
 dist/
 result
+_version.py
