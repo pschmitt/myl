@@ -80,11 +80,57 @@
             platforms = pkgs.lib.platforms.all;
           };
         };
+
+        devShell = pkgs.mkShell {
+          name = "myl-devshell";
+
+          buildInputs = [
+            pkgs.python3
+            pkgs.python3Packages.setuptools
+            pkgs.python3Packages.setuptools-scm
+            pkgs.python3Packages.html2text
+            pkgs.python3Packages.imap-tools
+            self.packages.${system}.myl-discovery
+            pkgs.python3Packages.rich
+          ];
+
+          # Additional development tools
+          nativeBuildInputs = [
+            pkgs.gh # GitHub CLI
+            pkgs.git
+            pkgs.python3Packages.ipython
+            pkgs.vim
+          ];
+
+          # Environment variables and shell hooks
+          shellHook = ''
+            export PYTHONPATH=${self.packages.${system}.myl}/lib/python3.x/site-packages
+            echo "Welcome to the myl development shell!"
+            # Activate a virtual environment if desired
+            # source .venv/bin/activate
+          '';
+
+          # Optional: Set up a Python virtual environment
+          # if you prefer using virtualenv or similar tools
+          # you can uncomment and configure the following lines
+          # shellHook = ''
+          #   if [ ! -d .venv ]; then
+          #     python3 -m venv .venv
+          #     source .venv/bin/activate
+          #     pip install --upgrade pip
+          #   else
+          #     source .venv/bin/activate
+          #   fi
+          # '';
+        };
       in
       {
+        # pkgs
         packages.myl = myl;
         packages."myl-discovery" = mylDiscovery;
         defaultPackage = myl;
+
+        devShells.default = devShell;
       }
     );
 }
