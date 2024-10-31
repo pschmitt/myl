@@ -27,6 +27,25 @@ def error_msg(msg):
     print(f"[red]{msg}[/red]", file=sys.stderr)
 
 
+def mail_to_json(msg):
+    return json.dumps(
+        {
+            "uid": msg.uid,
+            "subject": msg.subject,
+            "from": msg.from_,
+            "to": msg.to,
+            "date": msg.date.strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": str(int(msg.date.timestamp())),
+            "content": {
+                "raw": msg.obj.as_string(),
+                "html": msg.html,
+                "text": msg.text,
+            },
+            "attachments": msg.attachments,
+        }
+    )
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", help="Debug", action="store_true")
@@ -224,28 +243,7 @@ def main():
                         print(msg.obj.as_string())
                         return 0
                     elif args.json:
-                        print_json(
-                            json.dumps(
-                                {
-                                    "uid": msg.uid,
-                                    "subject": msg.subject,
-                                    "from": msg.from_,
-                                    "to": msg.to,
-                                    "date": msg.date.strftime(
-                                        "%Y-%m-%d %H:%M:%S"
-                                    ),
-                                    "timestamp": str(
-                                        int(msg.date.timestamp())
-                                    ),
-                                    "content": {
-                                        "raw": msg.obj.as_string(),
-                                        "html": msg.html,
-                                        "text": msg.text,
-                                    },
-                                    "attachments": msg.attachments,
-                                }
-                            )
-                        )
+                        print_json(mail_to_json(msg))
                         return 0
 
                     output = msg.text
@@ -276,22 +274,7 @@ def main():
                     else "<no-subject>"
                 )
                 if args.json:
-                    json_data.append(
-                        {
-                            "uid": msg.uid,
-                            "subject": msg.subject,
-                            "from": msg.from_,
-                            "to": msg.to,
-                            "date": msg.date.strftime("%Y-%m-%d %H:%M:%S"),
-                            "timestamp": str(int(msg.date.timestamp())),
-                            "content": {
-                                "raw": msg.obj.as_string(),
-                                "html": msg.html,
-                                "text": msg.text,
-                            },
-                            "attachments": msg.attachments,
-                        }
-                    )
+                    json_data.append(mail_to_json(msg))
                 else:
                     table.add_row(
                         msg.uid if msg.uid else "???",
