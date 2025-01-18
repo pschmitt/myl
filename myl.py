@@ -139,7 +139,7 @@ def parse_args():
         "--auto",
         help="Autodiscovery of the required server and port",
         action="store_true",
-        default=True,
+        default=False,
     )
     parser.add_argument(
         "-P", "--port", help="IMAP server port", default=IMAP_PORT
