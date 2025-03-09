@@ -98,6 +98,17 @@ def parse_args():
         default=None,
     )
 
+    # get most recent email
+    last_parser = subparsers.add_parser(
+        "last", aliases=["-1"], help="Retrieve the most recent email"
+    )
+    last_parser.add_argument(
+        "ATTACHMENT",
+        help="Name of the attachment to fetch",
+        nargs="?",
+        default=None,
+    )
+
     # Delete email command
     delete_parser = subparsers.add_parser("delete", help="Delete an email")
     delete_parser.add_argument(
@@ -301,15 +312,23 @@ def mb_connect(console, args) -> BaseMailBox:
 
 def display_single_mail(
     mailbox: BaseMailBox,
-    mail_id: int,
+    mail_id: int | None = None,
     attachment: str | None = None,
     mark_seen: bool = False,
     raw: bool = False,
     html: bool = False,
     json: bool = False,
 ):
-    LOGGER.debug("Fetch mail %s", mail_id)
-    msg = next(mailbox.fetch(f"UID {mail_id}", mark_seen=mark_seen))
+    if mail_id is None:
+        LOGGER.debug("No mail_id provided, fetching the most recent mail")
+        msg = next(
+            mailbox.fetch(
+                "ALL", reverse=True, bulk=True, limit=1, mark_seen=mark_seen
+            )
+        )
+    else:
+        LOGGER.debug("Fetch mail %s", mail_id)
+        msg = next(mailbox.fetch(f"UID {mail_id}", mark_seen=mark_seen))
     LOGGER.debug("Fetched mail %s", msg)
 
     if attachment:
@@ -469,6 +488,17 @@ def main() -> int:
                 return display_single_mail(
                     mailbox=mailbox,
                     mail_id=args.MAILID,
+                    attachment=args.ATTACHMENT,
+                    mark_seen=args.mark_seen,
+                    raw=args.raw,
+                    html=args.html,
+                    json=args.json,
+                )
+
+            elif args.command in ["-1", "last"]:
+                return display_single_mail(
+                    mailbox=mailbox,
+                    mail_id=None,
                     attachment=args.ATTACHMENT,
                     mark_seen=args.mark_seen,
                     raw=args.raw,
