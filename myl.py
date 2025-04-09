@@ -3,6 +3,7 @@
 
 from importlib.metadata import version, PackageNotFoundError
 import argparse
+import base64
 import logging
 import ssl
 import sys
@@ -59,7 +60,13 @@ def mail_to_dict(msg, date_format="%Y-%m-%d %H:%M:%S"):
             "html": msg.html,
             "text": msg.text,
         },
-        "attachments": msg.attachments,
+        "attachments": [
+            {
+                "filename": x.filename,
+                "content": base64.b64encode(x.payload).decode("utf-8"),
+            }
+            for x in msg.attachments
+        ],
     }
 
 
