@@ -67,7 +67,7 @@ def mail_to_dict(msg, date_format="%Y-%m-%d %H:%M:%S"):
                 "content_type": x.content_type,
                 "content_disposition": x.content_disposition,
                 "payload": base64.b64encode(x.payload).decode("utf-8"),
-                "size": x.size
+                "size": x.size,
             }
             for x in msg.attachments
         ],
