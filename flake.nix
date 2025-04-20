@@ -1,5 +1,5 @@
 {
-  description = "Flake for myl IMAP CLI client and myl-discovery, compatible with multiple systems";
+  description = "Flake for myl, an IMAP CLI client";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
