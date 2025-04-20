@@ -21,6 +21,8 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
+        mylDiscoveryPkg = myl-discovery.packages.${system}.myl-discovery;
+
         pkgs = nixpkgs.legacyPackages.${system};
 
         myl = pkgs.python3Packages.buildPythonApplication {
@@ -97,6 +99,7 @@
       {
         # pkgs
         packages.myl = myl;
+        packages.myl-discovery = mylDiscoveryPkg;
         defaultPackage = myl;
 
         devShells.default = devShell;
