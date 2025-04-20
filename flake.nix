@@ -25,7 +25,7 @@
 
         pkgs = nixpkgs.legacyPackages.${system};
 
-        myl = pkgs.python3Packages.buildPythonApplication {
+        mylPkg = pkgs.python3Packages.buildPythonApplication {
           pname = "myl";
           version = builtins.readFile ./version.txt;
           pyproject = true;
@@ -98,9 +98,9 @@
       in
       {
         # pkgs
-        packages.myl = myl;
+        packages.myl = mylPkg;
         packages.myl-discovery = mylDiscoveryPkg;
-        defaultPackage = myl;
+        defaultPackage = mylPkg;
 
         devShells.default = devShell;
       }
