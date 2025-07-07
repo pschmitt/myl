@@ -10,12 +10,12 @@ import sys
 from json import dumps as json_dumps
 
 import html2text
-from imap_tools.consts import MailMessageFlags
-from imap_tools.mailbox import (
+from imap_tools import (
     BaseMailBox,
     MailBox,
-    MailBoxTls,
+    MailBoxStartTls,
     MailBoxUnencrypted,
+    MailMessageFlags,
 )
 from imap_tools.query import AND
 from myldiscovery import autodiscover
@@ -301,8 +301,9 @@ def mb_connect(console, args) -> BaseMailBox:
         )
         raise MissingServerException()
 
-    ssl_context = ssl.create_default_context()
+    ssl_context = None
     if args.insecure:
+        ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
@@ -311,7 +312,7 @@ def mb_connect(console, args) -> BaseMailBox:
         mb = MailBox
         mb_kwargs["ssl_context"] = ssl_context
     elif args.starttls:
-        mb = MailBoxTls
+        mb = MailBoxStartTls
         mb_kwargs["ssl_context"] = ssl_context
     else:
         mb = MailBoxUnencrypted
