@@ -44,11 +44,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1745064666,
-        "narHash": "sha256-vN3QtLsU8hT0qKDI86XnguYAK1lUJx084QhCafr4JFo=",
+        "lastModified": 1763194656,
+        "narHash": "sha256-REA5CNvXAxmKe4jMfvcQ5aslSmxghWsE7Brr4AmmC0A=",
         "owner": "pschmitt",
         "repo": "myl-discovery",
-        "rev": "412b2b4b4543f7713ccc3b280f2719ac7cd868a8",
+        "rev": "6b316bc44a862eb4081361285f1ce7dce7099c79",
         "type": "github"
       },
       "original": {
