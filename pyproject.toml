@@ -28,6 +28,9 @@ version_file = "version.txt"
 version_scheme = "only-version"
 local_scheme = "no-local-version"
 
+[tool.setuptools.exclude-package-data]
+"*" = ["version.txt"]
+
 [project.urls]
 homepage = "https://github.com/pschmitt/myl"
 documentation = "https://github.com/pschmitt/myl/blob/head/readme.md"
