@@ -27,7 +27,7 @@
 
         mylPkg = pkgs.python3Packages.buildPythonApplication {
           pname = "myl";
-          version = builtins.readFile ./version.txt;
+          version = builtins.readFile ./myl-version.txt;
           pyproject = true;
 
           src = ./.;
