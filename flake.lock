@@ -44,11 +44,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776366957,
-        "narHash": "sha256-A22nNdWjrM5oU8nva/hVXmmSCQBLtZrPJgT2eK3dJuk=",
+        "lastModified": 1784022106,
+        "narHash": "sha256-A9JefC0tnn65htxv+0g9sq9s+xaXU4176Vhqm6KSqEs=",
         "owner": "pschmitt",
         "repo": "myl-discovery",
-        "rev": "64047be0243cbac3c5737aba2117816982f542e2",
+        "rev": "f84db995a92966ad98a519d3df77872561461080",
         "type": "github"
       },
       "original": {
@@ -59,11 +59,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1762977756,
-        "narHash": "sha256-4PqRErxfe+2toFJFgcRKZ0UI9NSIOJa+7RXVtBhy4KE=",
+        "lastModified": 1783776592,
+        "narHash": "sha256-UgCQzxeWI75XM8G+hPrPh+MKzEPjG3SpAj7dtqSbksA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+        "rev": "e7a3ca8092b61ff85b6a45bf863ea2b2d6a661b3",
         "type": "github"
       },
       "original": {
