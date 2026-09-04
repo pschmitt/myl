@@ -335,12 +335,21 @@ def display_single_mail(
         LOGGER.debug("No mail_id provided, fetching the most recent mail")
         msg = next(
             mailbox.fetch(
-                "ALL", reverse=True, bulk=True, limit=1, mark_seen=mark_seen
+                "ALL",
+                charset="UTF-8",
+                reverse=True,
+                bulk=True,
+                limit=1,
+                mark_seen=mark_seen,
             )
         )
     else:
         LOGGER.debug("Fetch mail %s", mail_id)
-        msg = next(mailbox.fetch(f"UID {mail_id}", mark_seen=mark_seen))
+        msg = next(
+            mailbox.fetch(
+                f"UID {mail_id}", charset="UTF-8", mark_seen=mark_seen
+            )
+        )
     LOGGER.debug("Fetched mail %s", msg)
 
     if attachment:
@@ -407,6 +416,7 @@ def display_emails(
 
     for msg in mailbox.fetch(
         criteria=search,
+        charset="UTF-8",
         reverse=True,
         bulk=True,
         limit=count,
