@@ -11,3 +11,10 @@ autodiscovery.
 - Before changing workflows, check for reusable workflows or actions in
   [ci-workflows](https://github.com/pschmitt/ci-workflows) and preserve
   existing triggers, parameters, and check coverage.
+- Keep `packages.default` canonical and retain the named `myl` and
+  `myl-discovery` package outputs; do not add the legacy `defaultPackage` alias.
+- The Python dev shell should inherit app dependencies with `inputsFrom` and
+  include the checkout in `PYTHONPATH` for direct source imports.
+- Run Nix evaluation and builds on an `rworker`, never on the local host.
+- Nixpkgs is pinned to a revision that does not support `x86_64-darwin`; this
+  is an existing platform limitation, not a regression in package outputs.

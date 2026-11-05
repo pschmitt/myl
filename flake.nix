@@ -12,7 +12,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
       myl-discovery,
@@ -58,15 +57,7 @@
         devShell = pkgs.mkShell {
           name = "myl-devshell";
 
-          buildInputs = [
-            pkgs.python3
-            pkgs.python3Packages.setuptools
-            pkgs.python3Packages.setuptools-scm
-            pkgs.python3Packages.html2text
-            pkgs.python3Packages.imap-tools
-            self.packages.${system}.myl-discovery
-            pkgs.python3Packages.rich
-          ];
+          inputsFrom = [ mylPkg ];
 
           # Additional development tools
           nativeBuildInputs = [
@@ -78,7 +69,7 @@
 
           # Environment variables and shell hooks
           shellHook = ''
-            export PYTHONPATH=${self.packages.${system}.myl}/lib/python3.x/site-packages
+            export PYTHONPATH="$PWD''${PYTHONPATH:+:$PYTHONPATH}"
             echo -e "\e[34mWelcome to the myl development shell!\e[0m"
             # Activate a virtual environment if desired
             # source .venv/bin/activate
@@ -100,9 +91,11 @@
       in
       {
         # pkgs
-        packages.myl = mylPkg;
-        packages.myl-discovery = mylDiscoveryPkg;
-        defaultPackage = mylPkg;
+        packages = {
+          myl = mylPkg;
+          myl-discovery = mylDiscoveryPkg;
+          default = mylPkg;
+        };
 
         devShells.default = devShell;
       }
