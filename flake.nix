@@ -2,7 +2,9 @@
   description = "Flake for myl, an IMAP CLI client";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixos-unstable no longer evaluates x86_64-darwin; keep Intel macOS
+    # support through the final Nixpkgs release that includes it.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
     myl-discovery = {
       url = "github:pschmitt/myl-discovery";

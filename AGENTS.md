@@ -16,5 +16,6 @@ autodiscovery.
 - The Python dev shell should inherit app dependencies with `inputsFrom` and
   include the checkout in `PYTHONPATH` for direct source imports.
 - Run Nix evaluation and builds on an `rworker`, never on the local host.
-- Nixpkgs is pinned to a revision that does not support `x86_64-darwin`; this
-  is an existing platform limitation, not a regression in package outputs.
+- The flake tracks the final Nixpkgs release that supports `x86_64-darwin`
+  (`nixpkgs-26.05-darwin`). Keep that targeted pin while Intel macOS support
+  is part of the package contract; Nixpkgs 26.11 and later drop the platform.
